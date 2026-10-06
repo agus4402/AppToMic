@@ -1,0 +1,32 @@
+#pragma code_page(65001)
+#include <windows.h>
+#include <commctrl.h>
+#include "resource.h"
+
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "app.manifest"
+
+IDD_MAIN DIALOGEX 0, 0, 232, 218
+STYLE DS_SETFONT | DS_CENTER | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX
+CAPTION "AppToMic"
+FONT 9, "Segoe UI", 400, 0, 1
+BEGIN
+    LTEXT           "Apps que se envían al micrófono virtual:", -1, 7, 8, 160, 9
+    PUSHBUTTON      "Refrescar", IDC_REFRESH, 175, 5, 50, 14
+    CONTROL         "", IDC_LIST, "SysListView32", LVS_REPORT | LVS_NOCOLUMNHEADER | LVS_SINGLESEL | LVS_SHOWSELALWAYS | WS_BORDER | WS_TABSTOP, 7, 22, 218, 92
+
+    LTEXT           "Micrófono:", -1, 7, 123, 42, 9
+    COMBOBOX        IDC_MIC, 50, 121, 175, 120, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+
+    LTEXT           "Vol. apps", -1, 7, 141, 42, 9
+    CONTROL         "", IDC_VOLAPP, "msctls_trackbar32", TBS_HORZ | TBS_NOTICKS | TBS_BOTH | WS_TABSTOP, 46, 138, 150, 15
+    LTEXT           "100%", IDC_VOLAPP_TXT, 199, 141, 26, 9
+
+    LTEXT           "Vol. mic", -1, 7, 158, 42, 9
+    CONTROL         "", IDC_VOLMIC, "msctls_trackbar32", TBS_HORZ | TBS_NOTICKS | TBS_BOTH | WS_TABSTOP, 46, 155, 150, 15
+    LTEXT           "100%", IDC_VOLMIC_TXT, 199, 158, 26, 9
+
+    AUTOCHECKBOX    "Iniciar automáticamente", IDC_AUTOSTART, 7, 179, 110, 10
+    DEFPUSHBUTTON   "Iniciar", IDC_TOGGLE, 165, 176, 60, 16
+
+    LTEXT           "", IDC_STATUS, 7, 197, 218, 18
+END
