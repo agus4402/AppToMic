@@ -12,3 +12,4 @@
 #define IDC_AUTOSTART    1008
 #define IDC_TOGGLE       1009
 #define IDC_STATUS       1010
+#define IDC_WINSTART     1011

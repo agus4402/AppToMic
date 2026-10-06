@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <commctrl.h>
 #include <shellapi.h>
+#include <shlobj.h>
 #include <algorithm>
 #include <cwchar>
 #include <set>
@@ -19,8 +20,11 @@ constexpr UINT_PTR kSyncTimer = 1;
 constexpr UINT kSyncIntervalMs = 3000;
 constexpr wchar_t kSection[] = L"AppToMic";
 constexpr wchar_t kNoMic[] = L"none";
+constexpr wchar_t kRunKey[] = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+constexpr wchar_t kRunValue[] = L"AppToMic";
 
 HINSTANCE g_inst;
+std::wstring g_exePath;
 HWND g_dlg;
 HICON g_iconBig;
 HICON g_iconSmall;
@@ -37,6 +41,33 @@ std::wstring g_error;
 bool g_populating = false;
 
 // ---------------------------------------------------------------- config
+
+// An AppToMic.ini next to the exe means portable mode; otherwise settings live in
+// %APPDATA%\AppToMic (the install dir under Program Files is not writable).
+std::wstring ConfigPath() {
+    std::wstring portable = g_exePath.substr(0, g_exePath.find_last_of(L'.')) + L".ini";
+    if (GetFileAttributesW(portable.c_str()) != INVALID_FILE_ATTRIBUTES) return portable;
+    wchar_t appData[MAX_PATH];
+    if (FAILED(SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, SHGFP_TYPE_CURRENT, appData))) return portable;
+    std::wstring dir = std::wstring(appData) + L"\\AppToMic";
+    CreateDirectoryW(dir.c_str(), nullptr);
+    return dir + L"\\AppToMic.ini";
+}
+
+bool RunAtLogin() {
+    return RegGetValueW(HKEY_CURRENT_USER, kRunKey, kRunValue, RRF_RT_REG_SZ, nullptr, nullptr, nullptr) ==
+           ERROR_SUCCESS;
+}
+
+void SetRunAtLogin(bool enable) {
+    if (!enable) {
+        RegDeleteKeyValueW(HKEY_CURRENT_USER, kRunKey, kRunValue);
+        return;
+    }
+    std::wstring cmd = L"\"" + g_exePath + L"\" /tray";
+    RegSetKeyValueW(HKEY_CURRENT_USER, kRunKey, kRunValue, REG_SZ, cmd.c_str(),
+                    static_cast<DWORD>((cmd.size() + 1) * sizeof(wchar_t)));
+}
 
 std::wstring IniGet(const wchar_t* key, const wchar_t* def) {
     wchar_t buf[4096];
@@ -89,6 +120,17 @@ void SetTrayTip(const wchar_t* tip) {
     nid.uID = kTrayId;
     nid.uFlags = NIF_TIP;
     wcsncpy_s(nid.szTip, tip, _TRUNCATE);
+    Shell_NotifyIconW(NIM_MODIFY, &nid);
+}
+
+void ShowBalloon(const wchar_t* title, const wchar_t* text) {
+    NOTIFYICONDATAW nid = {sizeof(nid)};
+    nid.hWnd = g_dlg;
+    nid.uID = kTrayId;
+    nid.uFlags = NIF_INFO;
+    nid.dwInfoFlags = NIIF_INFO;
+    wcsncpy_s(nid.szInfoTitle, title, _TRUNCATE);
+    wcsncpy_s(nid.szInfo, text, _TRUNCATE);
     Shell_NotifyIconW(NIM_MODIFY, &nid);
 }
 
@@ -266,6 +308,9 @@ void InitDialog(HWND dlg) {
     UpdateSliderText(IDC_VOLAPP, IDC_VOLAPP_TXT);
     UpdateSliderText(IDC_VOLMIC, IDC_VOLMIC_TXT);
     CheckDlgButton(dlg, IDC_AUTOSTART, IniInt(L"AutoStart", 0) ? BST_CHECKED : BST_UNCHECKED);
+    bool runAtLogin = RunAtLogin();
+    if (runAtLogin) SetRunAtLogin(true);  // refresh the path in case the exe moved
+    CheckDlgButton(dlg, IDC_WINSTART, runAtLogin ? BST_CHECKED : BST_UNCHECKED);
 
     PopulateMics();
     PopulateApps();
@@ -292,6 +337,9 @@ INT_PTR CALLBACK DialogProc(HWND dlg, UINT msg, WPARAM wParam, LPARAM lParam) {
             return TRUE;
         case IDC_AUTOSTART:
             IniSet(L"AutoStart", IsDlgButtonChecked(dlg, IDC_AUTOSTART) ? L"1" : L"0");
+            return TRUE;
+        case IDC_WINSTART:
+            SetRunAtLogin(IsDlgButtonChecked(dlg, IDC_WINSTART) == BST_CHECKED);
             return TRUE;
         case IDC_MIC:
             if (HIWORD(wParam) == CBN_SELCHANGE) {
@@ -398,15 +446,18 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, LPWSTR cmdLine, int) {
 
     wchar_t exePath[MAX_PATH];
     GetModuleFileNameW(nullptr, exePath, MAX_PATH);
-    g_iniPath = exePath;
-    g_iniPath = g_iniPath.substr(0, g_iniPath.find_last_of(L'.')) + L".ini";
+    g_exePath = exePath;
+    g_iniPath = ConfigPath();
 
     g_taskbarCreated = RegisterWindowMessageW(L"TaskbarCreated");
     LoadAppIcons();
 
+    // Always start hidden in the tray; the window opens from the tray icon.
     HWND dlg = CreateDialogParamW(inst, MAKEINTRESOURCEW(IDD_MAIN), nullptr, DialogProc, 0);
     if (!dlg) return 1;
-    ShowWindow(dlg, wcsstr(cmdLine, L"/tray") ? SW_HIDE : SW_SHOW);
+    if (!wcsstr(cmdLine, L"/tray"))  // launched by hand: tell the user where it went
+        ShowBalloon(L"AppToMic está en segundo plano",
+                    L"Hacé clic en el ícono de la bandeja para abrirlo.");
 
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0) > 0) {

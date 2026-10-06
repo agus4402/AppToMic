@@ -17,7 +17,7 @@ cl /nologo /std:c++17 /utf-8 /O1 /GL /MT /EHsc /W3 /GS- ^
    /Fobuild\ src\main.cpp src\engine.cpp src\capture.cpp src\sessions.cpp build\app.res ^
    /Fe:AppToMic.exe ^
    /link /LTCG /SUBSYSTEM:WINDOWS /OPT:REF /OPT:ICF ^
-   ole32.lib mmdevapi.lib avrt.lib comctl32.lib user32.lib shell32.lib version.lib || exit /b 1
+   ole32.lib mmdevapi.lib avrt.lib comctl32.lib user32.lib shell32.lib version.lib advapi32.lib || exit /b 1
 echo.
 echo Listo: %~dp0AppToMic.exe
 exit /b 0
