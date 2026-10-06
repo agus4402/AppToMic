@@ -1,9 +1,12 @@
 ﻿; Instalador de AppToMic (Inno Setup 6).
 ; Compilar desde la raíz del repo, después de build.bat:
-;   ISCC /DAppVersion=1.0.0 installer\AppToMic.iss
+;   ISCC installer\AppToMic.iss
+; La versión sale del archivo VERSION (se puede pisar con /DAppVersion=x.y.z).
 
 #ifndef AppVersion
-  #define AppVersion "0.0.0"
+  #define VersionFile FileOpen(AddBackslash(SourcePath) + "..\VERSION")
+  #define AppVersion Trim(FileRead(VersionFile))
+  #expr FileClose(VersionFile)
 #endif
 
 [Setup]

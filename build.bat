@@ -11,7 +11,14 @@ call "%VSDIR%\VC\Auxiliary\Build\vcvars64.bat" >nul || exit /b 1
 
 :build
 if not exist build mkdir build
-rc /nologo /i src /fo build\app.res src\app.rc || exit /b 1
+set "VERSION=0.0.0"
+if exist VERSION set /p VERSION=<VERSION
+for /f "tokens=1-3 delims=." %%a in ("%VERSION%") do set "VERSION_COMMA=%%a,%%b,%%c,0"
+> build\version.h (
+  echo #define APP_VERSION %VERSION_COMMA%
+  echo #define APP_VERSION_STR "%VERSION%"
+)
+rc /nologo /i src /i build /fo build\app.res src\app.rc || exit /b 1
 cl /nologo /std:c++17 /utf-8 /O1 /GL /MT /EHsc /W3 /GS- ^
    /DUNICODE /D_UNICODE /DNOMINMAX /D_WIN32_WINNT=0x0A00 ^
    /Fobuild\ src\main.cpp src\engine.cpp src\capture.cpp src\sessions.cpp build\app.res ^
@@ -19,7 +26,7 @@ cl /nologo /std:c++17 /utf-8 /O1 /GL /MT /EHsc /W3 /GS- ^
    /link /LTCG /SUBSYSTEM:WINDOWS /OPT:REF /OPT:ICF ^
    ole32.lib mmdevapi.lib avrt.lib comctl32.lib user32.lib shell32.lib version.lib advapi32.lib || exit /b 1
 echo.
-echo Listo: %~dp0AppToMic.exe
+echo Listo: %~dp0AppToMic.exe (v%VERSION%)
 exit /b 0
 
 :novs
