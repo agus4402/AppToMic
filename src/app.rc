@@ -35,24 +35,25 @@ STYLE DS_SETFONT | DS_CENTER | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMEN
 CAPTION "AppToMic"
 FONT 9, "Segoe UI", 400, 0, 1
 BEGIN
-    LTEXT           "Apps que se envían al micrófono virtual:", -1, 7, 8, 160, 9
-    PUSHBUTTON      "Refrescar", IDC_REFRESH, 175, 5, 50, 14
+    // Texts are replaced at runtime from strings.h (English here as fallback).
+    LTEXT           "Apps sent to the virtual microphone:", IDC_APPS_LBL, 7, 8, 160, 9
+    PUSHBUTTON      "Refresh", IDC_REFRESH, 175, 5, 50, 14
     CONTROL         "", IDC_LIST, "SysListView32", LVS_REPORT | LVS_NOCOLUMNHEADER | LVS_SINGLESEL | LVS_SHOWSELALWAYS | WS_BORDER | WS_TABSTOP, 7, 22, 218, 92
 
-    LTEXT           "Micrófono:", -1, 7, 123, 42, 9
-    COMBOBOX        IDC_MIC, 50, 121, 175, 120, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Microphone:", IDC_MIC_LBL, 7, 123, 46, 9
+    COMBOBOX        IDC_MIC, 55, 121, 170, 120, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 
-    LTEXT           "Vol. apps", -1, 7, 141, 42, 9
+    LTEXT           "Apps vol.", IDC_VOLAPP_LBL, 7, 141, 42, 9
     CONTROL         "", IDC_VOLAPP, "msctls_trackbar32", TBS_HORZ | TBS_NOTICKS | TBS_BOTH | WS_TABSTOP, 46, 138, 150, 15
     LTEXT           "100%", IDC_VOLAPP_TXT, 199, 141, 26, 9
 
-    LTEXT           "Vol. mic", -1, 7, 158, 42, 9
+    LTEXT           "Mic vol.", IDC_VOLMIC_LBL, 7, 158, 42, 9
     CONTROL         "", IDC_VOLMIC, "msctls_trackbar32", TBS_HORZ | TBS_NOTICKS | TBS_BOTH | WS_TABSTOP, 46, 155, 150, 15
     LTEXT           "100%", IDC_VOLMIC_TXT, 199, 158, 26, 9
 
-    AUTOCHECKBOX    "Enviar audio al abrir", IDC_AUTOSTART, 7, 179, 110, 10
-    AUTOCHECKBOX    "Iniciar con Windows", IDC_WINSTART, 7, 191, 110, 10
-    DEFPUSHBUTTON   "Iniciar", IDC_TOGGLE, 165, 181, 60, 16
+    AUTOCHECKBOX    "Send audio on open", IDC_AUTOSTART, 7, 179, 110, 10
+    AUTOCHECKBOX    "Start with Windows", IDC_WINSTART, 7, 191, 110, 10
+    DEFPUSHBUTTON   "Start", IDC_TOGGLE, 165, 181, 60, 16
 
     LTEXT           "", IDC_STATUS, 7, 209, 218, 18
 END

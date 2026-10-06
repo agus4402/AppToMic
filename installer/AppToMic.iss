@@ -2,6 +2,7 @@
 ; Compilar desde la raíz del repo, después de build.bat:
 ;   ISCC installer\AppToMic.iss
 ; La versión sale del archivo VERSION (se puede pisar con /DAppVersion=x.y.z).
+; Idioma: inglés por defecto; español si Windows está en español.
 
 #ifndef AppVersion
   #define VersionFile FileOpen(AddBackslash(SourcePath) + "..\VERSION")
@@ -30,12 +31,29 @@ SolidCompression=yes
 WizardStyle=modern
 UninstallDisplayIcon={app}\AppToMic.exe
 UninstallDisplayName=AppToMic
+ShowLanguageDialog=auto
 
 [Languages]
+Name: "en"; MessagesFile: "compiler:Default.isl"
 Name: "es"; MessagesFile: "compiler:Languages\Spanish.isl"
 
+[CustomMessages]
+en.StartWithWindows=Start AppToMic with Windows
+en.OpenCableDownload=Open the VB-CABLE download page (required)
+en.CablePageTitle=VB-CABLE is missing
+en.CablePageSubtitle=AppToMic needs the VB-CABLE virtual microphone to work.
+en.CablePageText=VB-CABLE was not found on this PC. To install it:%n%n  1. Open its official page with the button below and download the Windows package.%n  2. Unzip it and run VBCABLE_Setup_x64.exe as administrator.%n  3. Click "Install Driver" and restart your PC.%n%nYou can continue installing AppToMic in the meantime.%nVB-CABLE is donationware by VB-Audio (www.vb-cable.com).
+en.OpenCableButton=Open VB-CABLE page
+
+es.StartWithWindows=Iniciar AppToMic con Windows
+es.OpenCableDownload=Abrir la página de descarga de VB-CABLE (necesario)
+es.CablePageTitle=Falta VB-CABLE
+es.CablePageSubtitle=AppToMic necesita el micrófono virtual VB-CABLE para funcionar.
+es.CablePageText=No se encontró VB-CABLE en esta PC. Para instalarlo:%n%n  1. Abrí su página oficial con el botón de abajo y descargá el paquete para Windows.%n  2. Descomprimilo y ejecutá VBCABLE_Setup_x64.exe como administrador.%n  3. Hacé clic en "Install Driver" y reiniciá la PC.%n%nPodés seguir con la instalación de AppToMic mientras tanto.%nVB-CABLE es donationware de VB-Audio (www.vb-cable.com).
+es.OpenCableButton=Abrir página de VB-CABLE
+
 [Tasks]
-Name: "startup"; Description: "Iniciar AppToMic con Windows"
+Name: "startup"; Description: "{cm:StartWithWindows}"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
@@ -50,7 +68,7 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 
 [Run]
 ; La licencia de VB-CABLE no permite integrarlo en otro instalador, así que solo guiamos al usuario.
-Filename: "https://vb-audio.com/Cable/"; Description: "Abrir la página de descarga de VB-CABLE (necesario)"; Flags: shellexec postinstall nowait skipifsilent; Check: not IsCableInstalled
+Filename: "https://vb-audio.com/Cable/"; Description: "{cm:OpenCableDownload}"; Flags: shellexec postinstall nowait skipifsilent; Check: not IsCableInstalled
 Filename: "{app}\AppToMic.exe"; Description: "{cm:LaunchProgram,AppToMic}"; Flags: nowait postinstall skipifsilent
 
 [Code]
@@ -99,18 +117,12 @@ procedure InitializeWizard;
 var
   Button: TNewButton;
 begin
-  CablePage := CreateOutputMsgPage(wpSelectTasks, 'Falta VB-CABLE',
-    'AppToMic necesita el micrófono virtual VB-CABLE para funcionar.',
-    'No se encontró VB-CABLE en esta PC. Para instalarlo:' + #13#10#13#10 +
-    '  1. Abrí su página oficial con el botón de abajo y descargá el paquete para Windows.' + #13#10 +
-    '  2. Descomprimilo y ejecutá VBCABLE_Setup_x64.exe como administrador.' + #13#10 +
-    '  3. Hacé clic en "Install Driver" y reiniciá la PC.' + #13#10#13#10 +
-    'Podés seguir con la instalación de AppToMic mientras tanto.' + #13#10 +
-    'VB-CABLE es donationware de VB-Audio (www.vb-cable.com).');
+  CablePage := CreateOutputMsgPage(wpSelectTasks, CustomMessage('CablePageTitle'),
+    CustomMessage('CablePageSubtitle'), CustomMessage('CablePageText'));
 
   Button := TNewButton.Create(CablePage);
   Button.Parent := CablePage.Surface;
-  Button.Caption := 'Abrir página de VB-CABLE';
+  Button.Caption := CustomMessage('OpenCableButton');
   Button.Width := ScaleX(180);
   Button.Height := WizardForm.NextButton.Height;
   Button.Left := 0;

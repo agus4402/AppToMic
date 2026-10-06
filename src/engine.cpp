@@ -6,6 +6,7 @@
 #include <cstdio>
 
 #include "sessions.h"
+#include "strings.h"
 
 namespace {
 constexpr size_t kPrimeFrames = kSampleRate * 20 / 1000;     // wait for 20 ms before playing a source
@@ -17,7 +18,7 @@ bool Engine::Start(std::wstring& error) {
 
     renderId_ = FindDeviceByName(eRender, L"CABLE Input");
     if (renderId_.empty()) {
-        error = L"No se encontró VB-Cable (\"CABLE Input\"). Instalalo desde vb-audio.com/Cable y reiniciá.";
+        error = S().cableMissing;
         return false;
     }
 
@@ -29,7 +30,7 @@ bool Engine::Start(std::wstring& error) {
     if (thread_) WaitForSingleObject(ready_, 10000);
     if (FAILED(initHr_)) {
         wchar_t msg[128];
-        swprintf_s(msg, L"No se pudo abrir CABLE Input (error 0x%08X).", static_cast<unsigned>(initHr_));
+        swprintf_s(msg, S().cableOpenFailedFmt, static_cast<unsigned>(initHr_));
         error = msg;
         Stop();
         return false;

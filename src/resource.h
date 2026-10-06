@@ -13,3 +13,7 @@
 #define IDC_TOGGLE       1009
 #define IDC_STATUS       1010
 #define IDC_WINSTART     1011
+#define IDC_APPS_LBL     1012
+#define IDC_MIC_LBL      1013
+#define IDC_VOLAPP_LBL   1014
+#define IDC_VOLMIC_LBL   1015

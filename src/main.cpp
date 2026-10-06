@@ -11,6 +11,7 @@
 #include "engine.h"
 #include "resource.h"
 #include "sessions.h"
+#include "strings.h"
 
 namespace {
 
@@ -139,18 +140,16 @@ void UpdateStatus() {
     if (!g_error.empty()) {
         text = g_error;
     } else if (!g_engine.Running()) {
-        text = L"Detenido. En Discord/OBS elegí \"CABLE Output\" como micrófono.";
+        text = S().stopped;
     } else {
         wchar_t buf[160];
-        swprintf_s(buf, L"Enviando a CABLE Input: %zu app(s)%s.", g_engine.ActiveApps(),
-                   g_engine.MicActive() ? L" + micrófono" : L"");
+        swprintf_s(buf, S().sendingFmt, g_engine.ActiveApps(), g_engine.MicActive() ? S().plusMic : L"");
         text = buf;
-        if (g_engine.DefaultOutputIsCable())
-            text += L"\n⚠ Tu salida por defecto es CABLE Input: cambiala o habrá eco.";
+        if (g_engine.DefaultOutputIsCable()) text += S().echoWarning;
     }
     SetDlgItemTextW(g_dlg, IDC_STATUS, text.c_str());
-    SetDlgItemTextW(g_dlg, IDC_TOGGLE, g_engine.Running() ? L"Detener" : L"Iniciar");
-    SetTrayTip(g_engine.Running() ? L"AppToMic - enviando" : L"AppToMic - detenido");
+    SetDlgItemTextW(g_dlg, IDC_TOGGLE, g_engine.Running() ? S().stop : S().start);
+    SetTrayTip(g_engine.Running() ? S().trayRunning : S().trayStopped);
 }
 
 int AddIcon(const std::wstring& path) {
@@ -178,7 +177,7 @@ void PopulateApps() {
 
     for (const auto& app : apps) {
         std::wstring text = app.title;
-        if (!app.running) text += L"  (cerrada)";
+        if (!app.running) text += S().closedSuffix;
         LVITEMW item = {};
         item.mask = LVIF_TEXT | LVIF_IMAGE;
         item.iItem = static_cast<int>(g_itemExes.size());
@@ -201,7 +200,7 @@ void PopulateMics() {
     for (auto& d : ListDevices(eCapture))
         if (!wcsstr(d.name.c_str(), L"CABLE Output")) g_mics.push_back(std::move(d));
 
-    SendMessageW(combo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"(Sin micrófono)"));
+    SendMessageW(combo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(S().noMic));
     int selected = 0;
     for (size_t i = 0; i < g_mics.size(); ++i) {
         SendMessageW(combo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(g_mics[i].name.c_str()));
@@ -267,10 +266,10 @@ void Quit() {
 void ShowTrayMenu() {
     enum { kOpen = 1, kToggle, kExit };
     HMENU menu = CreatePopupMenu();
-    AppendMenuW(menu, MF_STRING, kOpen, L"Abrir");
-    AppendMenuW(menu, MF_STRING, kToggle, g_engine.Running() ? L"Detener" : L"Iniciar");
+    AppendMenuW(menu, MF_STRING, kOpen, S().open);
+    AppendMenuW(menu, MF_STRING, kToggle, g_engine.Running() ? S().stop : S().start);
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(menu, MF_STRING, kExit, L"Salir");
+    AppendMenuW(menu, MF_STRING, kExit, S().exit);
     POINT pt;
     GetCursorPos(&pt);
     SetForegroundWindow(g_dlg);
@@ -281,8 +280,20 @@ void ShowTrayMenu() {
     else if (cmd == kExit) Quit();
 }
 
+void SetDialogTexts(HWND dlg) {
+    const Strings& s = S();
+    SetDlgItemTextW(dlg, IDC_APPS_LBL, s.appsLabel);
+    SetDlgItemTextW(dlg, IDC_REFRESH, s.refresh);
+    SetDlgItemTextW(dlg, IDC_MIC_LBL, s.micLabel);
+    SetDlgItemTextW(dlg, IDC_VOLAPP_LBL, s.appVolLabel);
+    SetDlgItemTextW(dlg, IDC_VOLMIC_LBL, s.micVolLabel);
+    SetDlgItemTextW(dlg, IDC_AUTOSTART, s.sendOnOpen);
+    SetDlgItemTextW(dlg, IDC_WINSTART, s.startWithWindows);
+}
+
 void InitDialog(HWND dlg) {
     g_dlg = dlg;
+    SetDialogTexts(dlg);
     SendMessageW(dlg, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(g_iconBig));
     SendMessageW(dlg, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(g_iconSmall));
 
@@ -389,7 +400,7 @@ INT_PTR CALLBACK DialogProc(HWND dlg, UINT msg, WPARAM wParam, LPARAM lParam) {
         if (wParam == kSyncTimer) {
             if (g_engine.RenderFailed()) {
                 StopEngine();
-                g_error = L"Se perdió el dispositivo CABLE Input. Tocá Iniciar para reintentar.";
+                g_error = S().cableLost;
                 UpdateStatus();
             } else {
                 g_engine.SyncApps(g_selected);
@@ -456,8 +467,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, LPWSTR cmdLine, int) {
     HWND dlg = CreateDialogParamW(inst, MAKEINTRESOURCEW(IDD_MAIN), nullptr, DialogProc, 0);
     if (!dlg) return 1;
     if (!wcsstr(cmdLine, L"/tray"))  // launched by hand: tell the user where it went
-        ShowBalloon(L"AppToMic está en segundo plano",
-                    L"Hacé clic en el ícono de la bandeja para abrirlo.");
+        ShowBalloon(S().balloonTitle, S().balloonText);
 
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
