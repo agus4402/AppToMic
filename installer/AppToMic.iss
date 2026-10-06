@@ -56,6 +56,7 @@ Filename: "{app}\AppToMic.exe"; Description: "{cm:LaunchProgram,AppToMic}"; Flag
 [Code]
 const
   RunKey = 'Software\Microsoft\Windows\CurrentVersion\Run';
+  CableUrl = 'https://vb-audio.com/Cable/';
   // PKEY_Device_DeviceDesc
   DeviceDescKey = '{a45c254e-df1c-4efd-8020-67d146a850e0},2';
 
@@ -87,15 +88,34 @@ begin
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM AppToMic.exe', '', SW_HIDE, ewWaitUntilTerminated, Code);
 end;
 
+procedure OpenCablePage(Sender: TObject);
+var
+  Code: Integer;
+begin
+  ShellExec('open', CableUrl, '', '', SW_SHOWNORMAL, ewNoWait, Code);
+end;
+
 procedure InitializeWizard;
+var
+  Button: TNewButton;
 begin
   CablePage := CreateOutputMsgPage(wpSelectTasks, 'Falta VB-CABLE',
     'AppToMic necesita el micrófono virtual VB-CABLE para funcionar.',
-    'No se encontró VB-CABLE en esta PC. Al terminar la instalación se abrirá su página oficial:' + #13#10#13#10 +
-    '  1. Descargá el paquete de VB-CABLE para Windows y descomprimilo.' + #13#10 +
-    '  2. Ejecutá VBCABLE_Setup_x64.exe como administrador.' + #13#10 +
+    'No se encontró VB-CABLE en esta PC. Para instalarlo:' + #13#10#13#10 +
+    '  1. Abrí su página oficial con el botón de abajo y descargá el paquete para Windows.' + #13#10 +
+    '  2. Descomprimilo y ejecutá VBCABLE_Setup_x64.exe como administrador.' + #13#10 +
     '  3. Hacé clic en "Install Driver" y reiniciá la PC.' + #13#10#13#10 +
+    'Podés seguir con la instalación de AppToMic mientras tanto.' + #13#10 +
     'VB-CABLE es donationware de VB-Audio (www.vb-cable.com).');
+
+  Button := TNewButton.Create(CablePage);
+  Button.Parent := CablePage.Surface;
+  Button.Caption := 'Abrir página de VB-CABLE';
+  Button.Width := ScaleX(180);
+  Button.Height := WizardForm.NextButton.Height;
+  Button.Left := 0;
+  Button.Top := CablePage.SurfaceHeight - Button.Height;
+  Button.OnClick := @OpenCablePage;
 end;
 
 function ShouldSkipPage(PageID: Integer): Boolean;
